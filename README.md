@@ -47,7 +47,7 @@ Your file should look something like this:
       [ "Level 4", "VWXYZ12" ]
     ],
     "incident_room": "1234_xyz@conf.hipchat.com",
-    "api_subdomain": "mommas_basement"
+    "api_subdomain": "mommas-basement"
 }
 ```
 
