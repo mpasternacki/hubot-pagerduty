@@ -1,7 +1,14 @@
 #
-# pagerduty integration
+# Pager Duty Integration
 #
-# hot oncall - list of people on call
+# Commands:
+# hot oncall - list of people on call and the schedules they're assigned to.
+#
+# Additionally polls for active incidents every 30 seconds, and relays them to
+# the "incident room".
+#
+# Authored by the Hotel Tonight Team.
+# Please see LICENSE file for distribution terms.
 #
 
 fs = require('fs')
