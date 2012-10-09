@@ -37,6 +37,7 @@ This is a JSON object and consists of a few fields:
   website and look at a schedule, this will be the 6 digit alphanumeric code in
   the URL.
 * `incident_room`: this is room ID to send notifications on incoming alerts, and will be specific to your chat medium.
+* `urgent_page_service_key`: See "Urgent Page Facility" section below.
 
 This is parsed with `JSON.parse` which does not allow comments. You've been warned!
 
@@ -52,9 +53,30 @@ Your file should look something like this:
       [ "Level 4", "VWXYZ12" ]
     ],
     "incident_room": "1234_xyz@conf.hipchat.com",
-    "api_subdomain": "mommas-basement"
+    "api_subdomain": "mommas-basement",
+    "urgent_page_service_key": "1231231231231231231231"
 }
 ```
+
+Urgent Page Facility
+--------------------
+
+The "Urgent Page Facility" allows anybody capable of talking to hubot to create
+a new incident. This can be extremely useful when non-technical staff who
+interact with the hubot need to alert Operations personnel and your monitoring
+system is not catching the issue.
+
+To configure this, you need a "service key" from PagerDuty. To create this:
+
+* Click on the "Services" tab in the PagerDuty UI at the top.
+* Click on "Add a New Service"
+* Name your service and select the escalation policy these pages will route to.
+* Under "Service Type", select "Generic API Service".
+* Submit the Form.
+
+On the page that appears next you will see a listing for a "service key", which
+is a big string of numbers. That's the value you need to put in your
+`pagerdutyrc` under `urgent_page_service_key`.
 
 Authors
 -------
