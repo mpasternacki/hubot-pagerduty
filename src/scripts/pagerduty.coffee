@@ -2,7 +2,8 @@
 # Pager Duty Integration
 #
 # Commands:
-# hot oncall - list of people on call and the schedules they're assigned to.
+# hubot oncall - list of people on call and the schedules they're assigned to.
+# hubot urgent <some text here> - send an urgent page for when the monitoring system fails - see README
 #
 # Additionally polls for active incidents every 30 seconds, and relays them to
 # the "incident room".
@@ -17,6 +18,8 @@ config = JSON.parse(fs.readFileSync("pagerdutyrc"))
 token       = config.token
 schedules   = config.schedules
 subdomain   = config.api_subdomain
+
+urgent_page_service_key = config.urgent_page_service_key
 
 incident_poll_interval  = 30000 # once every 30 seconds
 incident_timeout        = 300000 # 5 minutes in milliseconds
@@ -103,3 +106,26 @@ module.exports = (robot) ->
       do (schedule) ->
         sync_call = getFetcher(schedule, sync_call)
     sync_call(msg, today, tomorrow)
+  robot.respond /urgent (.*)/i, (msg) ->
+    incident_message = msg.match[1]
+    curtime = new Date().getTime()
+    reporter = msg.message.user.name
+    query = {
+        "service_key": urgent_page_service_key,
+        "incident_key": "hubot/#{curtime}",
+        "event_type": "trigger",
+        "description": "Urgent from #{reporter}: #{incident_message}"
+    }
+    string_query = JSON.stringify(query)
+    content_length = string_query.length
+    msg
+      .http("https://events.pagerduty.com/generic/2010-04-15/create_event.json")
+      .headers
+        "Content-type": "application/json",
+        "Content-length": content_length
+      .post(string_query) (err, res, body) ->
+        result = JSON.parse(body)
+        if result.status == "success"
+          msg.send "Your page has been sent. Please be patient as it may be a minute or two before the recipient gets alerted."
+        else
+          msg.send "There was an error sending your page."
