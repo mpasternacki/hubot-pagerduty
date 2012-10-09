@@ -21,9 +21,7 @@ itch, and others have expressed interest in making use of it.
 Requirements and Installation
 -----------------------------
 
-Currently there is no npm/packaging support -- this is expected soon but will
-be done as time permits. Simply copy the `scripts/pagerduty.coffee` into your
-hubot's `scripts/` directory.
+`npm install hubot-pagerduty`
 
 You will also need to create a `pagerdutyrc` at the root of your hubot's path.
 This is a JSON object and consists of a few fields:
