@@ -21,7 +21,7 @@ itch, and others have expressed interest in making use of it.
 Requirements and Installation
 -----------------------------
 
-`npm install hubot-pagerduty`
+Add `hubot-pagerduty` to your hubot's package.json and `npm install`.
 
 Then, copy `node_modules/hubot-pagerduty/src/load_pagerduty.coffee` into your
 hubot's scripts/ directory. You will only need to do this once, and will let
