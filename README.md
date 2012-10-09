@@ -23,12 +23,19 @@ Requirements and Installation
 
 `npm install hubot-pagerduty`
 
+Then, copy `node_modules/hubot-pagerduty/src/load_pagerduty.coffee` into your
+hubot's scripts/ directory. You will only need to do this once, and will let
+you keep current with new updates.
+
 You will also need to create a `pagerdutyrc` at the root of your hubot's path.
 This is a JSON object and consists of a few fields:
 
 * `token`: the API token you will use
 * `api_subdomain`: the pagerduty subdomain. If you use `foo.pagerduty.com` to login, this will be `foo`.
-* `schedules`: this is an array of two-element arrays. Position 0 is the schedule name, and position 1 is the schedule ID. If you go to the pagerduty website and look at a schedule, this will be the 6 digit alphanumeric code in the URL.
+* `schedules`: this is an array of two-element arrays. Position 0 is the
+  schedule name, and position 1 is the schedule ID. If you go to the pagerduty
+  website and look at a schedule, this will be the 6 digit alphanumeric code in
+  the URL.
 * `incident_room`: this is room ID to send notifications on incoming alerts, and will be specific to your chat medium.
 
 This is parsed with `JSON.parse` which does not allow comments. You've been warned!
