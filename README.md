@@ -58,6 +58,9 @@ Your file should look something like this:
 }
 ```
 
+**(Note to irc users, you will have issues unless you use at least hubot 2.4.7
+and hubot-irc 0.1.10)**
+
 Urgent Page Facility
 --------------------
 
