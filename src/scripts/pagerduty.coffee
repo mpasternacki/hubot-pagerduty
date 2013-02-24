@@ -84,7 +84,7 @@ checkIncidents = (robot) ->
       for incident in result.incidents
         last_seen = seen_incidents[incident.incident_number]
         if !last_seen? || processing_time - incident_timeout > last_seen
-          strings = ["PagerDuty Alert: #{incident.incident_key} - URL: #{incident.html_url}"]
+          strings = ["PagerDuty Alert: #{incident.incident_key || incident.trigger_summary_data.subject} - URL: #{incident.html_url}"]
           if incident.assigned_to_user?
             strings.push(" Assigned To: #{incident.assigned_to_user.name}")
           robot.send(incident_room, strings)
