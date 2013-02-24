@@ -15,9 +15,10 @@
 fs = require('fs')
 config = JSON.parse(fs.readFileSync("pagerdutyrc"))
 
-token       = config.token
-schedules   = config.schedules
-subdomain   = config.api_subdomain
+token           = config.token
+schedules       = config.schedules
+subdomain       = config.api_subdomain
+resolve_user_id = config.resolve_user_id
 
 urgent_page_service_key = config.urgent_page_service_key
 
@@ -66,6 +67,23 @@ getFetcher = (schedule, func) ->
         msg.send "#{schedule_name}: #{result.entries[0].user.name}" 
         func(msg, today, tomorrow) if func?
 
+updateIncident = (msg, id, status) ->
+  data = { "requester_id": resolve_user_id, "incidents": [ { "id": id, "status": status + "d" } ] }
+  string_data = JSON.stringify(data)
+  content_length = string_data.length
+  msg
+    .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
+    .headers
+      "Content-type": "application/json"
+      "Content-Length": content_length
+      "Authorization": "Token token=" + token
+    .put(string_data) (err, res, body) ->
+      result = JSON.parse(body)
+      if result && result.incidents && result.incidents[0] && !result.incidents[0].error?
+        msg.send "#{id} was set to #{status}d"
+      else
+        msg.send "There was an error handling your request to set #{id} to #{status}"
+
 checkIncidents = (robot) ->
   today = new Date()
   tomorrow = new Date(today.getTime() + 86400000)
@@ -96,6 +114,12 @@ checkIncidents = (robot) ->
 
 module.exports = (robot) ->
   setInterval(checkIncidents, incident_poll_interval, robot)
+
+  robot.respond /(resolve|acknowledge)d?\s+(.*)/i, (msg) ->
+    action = msg.match[1]
+    incident_id = msg.match[2]
+    updateIncident(msg, incident_id, action)
+
   robot.respond /oncall/i, (msg) ->
     today = new Date()
     tomorrow = new Date(today.getTime() + 86400000)
