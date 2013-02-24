@@ -17,10 +17,10 @@
 fs = require('fs')
 config = JSON.parse(fs.readFileSync("pagerdutyrc"))
 
-token           = config.token
-schedules       = config.schedules
-subdomain       = config.api_subdomain
-resolve_user_id = config.resolve_user_id
+token     = config.token
+schedules = config.schedules
+subdomain = config.api_subdomain
+user_map  = config.user_map
 
 urgent_page_service_key = config.urgent_page_service_key
 
@@ -70,7 +70,11 @@ getFetcher = (schedule, func) ->
         func(msg, today, tomorrow) if func?
 
 updateIncident = (msg, id, status) ->
-  data = { "requester_id": resolve_user_id, "incidents": [ { "id": id, "status": status + "d" } ] }
+  data = {
+    "requester_id": user_map[msg.message.user.name],
+    "incidents": [ { "id": id, "status": status + "d" } ]
+  }
+
   string_data = JSON.stringify(data)
   content_length = string_data.length
   msg
@@ -132,6 +136,7 @@ module.exports = (robot) ->
       do (schedule) ->
         sync_call = getFetcher(schedule, sync_call)
     sync_call(msg, today, tomorrow)
+
   robot.respond /urgent (.*)/i, (msg) ->
     incident_message = msg.match[1]
     curtime = new Date().getTime()
