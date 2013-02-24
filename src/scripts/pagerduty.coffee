@@ -4,6 +4,8 @@
 # Commands:
 # hubot oncall - list of people on call and the schedules they're assigned to.
 # hubot urgent <some text here> - send an urgent page for when the monitoring system fails - see README
+# hubot resolve <id> - resolve an incident
+# hubot acknowledge <id> - acknowledge an incident
 #
 # Additionally polls for active incidents every 30 seconds, and relays them to
 # the "incident room".
