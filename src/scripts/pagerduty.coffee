@@ -52,6 +52,38 @@ getTextDate = (date) ->
   today += "#{month}-#{day}"
   return today
 
+# more ghetto shit -erikh
+getUTCTextTime = (date) ->
+  month = date.getUTCMonth() + 1
+  day = date.getUTCDate()
+  today = "#{date.getUTCFullYear()}-"
+  hours = date.getUTCHours()
+  minutes = date.getUTCMinutes()
+
+  # this is pretty horrible
+  if hours < 10
+    hours = "0#{hours}"
+  else
+    hours = "#{hours}"
+
+  if minutes < 10
+    minutes = "0#{minutes}"
+  else
+    minutes = "#{minutes}"
+
+  if month < 10
+    month = "0#{month}"
+  else
+    month = "#{month}"
+
+  if day < 10
+    day = "0#{day}"
+  else
+    day = "#{day}"
+
+  today += "#{month}-#{day}T#{hours}:#{minutes}Z"
+  return today
+
 getFetcher = (schedule, func) ->
   return (msg, today, tomorrow) ->
     schedule_name = schedule[0]
@@ -69,9 +101,45 @@ getFetcher = (schedule, func) ->
         msg.send "#{schedule_name}: #{result.entries[0].user.name}" 
         func(msg, today, tomorrow) if func?
 
+setOverride = (msg, time, userid) ->
+  msg
+    .http("https://#{subdomain}.pagerduty.com/api/v1/schedules")
+    .query
+      "requester_id": userid
+    .headers
+      "Content-type": "application/json"
+      "Authorization": "Token token=" + token
+    .get() (err, res, body) ->
+      result = JSON.parse(body)
+      if result.schedules?
+        now = new Date()
+        start = getUTCTextTime(now)
+        end = getUTCTextTime(new Date(now.getTime() + (time * 60000)))
+        data = { 
+          "override": { "user_id": userid, "start": start, "end": end }
+        }
+
+        string_data = JSON.stringify(data)
+        content_length = string_data.length
+
+        for schedule in result.schedules
+          do (schedule) ->
+            msg
+              .http("https://#{subdomain}.pagerduty.com/api/v1/schedules/#{schedule.id}/overrides")
+              .headers
+                "Content-type": "application/json"
+                "Authorization": "Token token=" + token
+                "Content-Length": content_length
+              .post(string_data) (err, res, body) ->
+                override_result = JSON.parse(body) 
+                if override_result && override_result.override && !override_result.override.error?
+                  msg.send "Override set #{schedule.name} from #{start} to #{end}"
+                else
+                  msg.send "Error setting override for #{schedule.name} from #{start} to #{end}"
+
 updateIncident = (msg, id, status) ->
-  data = {
-    "requester_id": user_map[msg.message.user.name],
+  data = { 
+    "requester_id": user_map[msg.message.user.name], 
     "incidents": [ { "id": id, "status": status + "d" } ]
   }
 
@@ -125,6 +193,11 @@ module.exports = (robot) ->
     action = msg.match[1]
     incident_id = msg.match[2]
     updateIncident(msg, incident_id, action)
+
+  robot.respond /override\s*(\S*)\s*(\S*)/i, (msg) ->
+    time = msg.match[1] || 60
+    user_id = user_map[msg.match[2]] || user_map[msg.message.user.name]
+    setOverride(msg, time, user_id)
 
   robot.respond /oncall/i, (msg) ->
     today = new Date()
