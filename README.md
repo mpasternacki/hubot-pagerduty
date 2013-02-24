@@ -15,6 +15,7 @@ It provides a few features:
 * Ability to retrieve oncall rotation list for the current time
 * Poll for incoming incidents and send a message to an "incident room" (e.g., the Operations or Dev Team Rooms) with details.
 * Ability to resolve and acknowledge incidents right from chat.
+* Ability to set override windows.
 
 More features are coming. This was initially developed in house to scratch an
 itch, and others have expressed interest in making use of it.
@@ -39,8 +40,8 @@ This is a JSON object and consists of a few fields:
   the URL.
 * `incident_room`: this is room ID to send notifications on incoming alerts, and will be specific to your chat medium.
 * `urgent_page_service_key`: See "Urgent Page Facility" section below.
-* `resolve_user_id`: for the resolve/acknowledge command, this is the user
-  "performing" the resolve/acknowledge.
+* `user_map`: a mapping of chat usernames to pagerduty identifiers. Set 'Shell'
+  for local testing (that will be the username there). Used in a few commands.
 
 This is parsed with `JSON.parse` which does not allow comments. You've been warned!
 
@@ -58,7 +59,11 @@ Your file should look something like this:
     "incident_room": "1234_xyz@conf.hipchat.com",
     "api_subdomain": "mommas-basement",
     "urgent_page_service_key": "1231231231231231231231",
-    "resolve_user_id": "8675309"
+    "user_map": {
+      "erikh": "WAKKAWAK",
+      "Shell": "WAKKAWAK",
+      "chris": "123DEFAB"
+    }
 }
 ```
 
