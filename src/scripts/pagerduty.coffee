@@ -173,12 +173,18 @@ formatIncident = (incident, detail) ->
       for line in lines
         if line.match(/Host:/) || line.match(/Metric:/)
           used_lines.push(line)
-      output = used_lines.join(" ")
+      if used_lines.length > 0
+        output = used_lines.join(" ")
+      else
+        output = tsd.description
   else
     if tsd.subject?
       output = tsd.subject
     else
       incident.incident_key
+
+  if incident.status != "triggered"
+    output += " - Current State: #{incident.status}"
 
   return output
 
