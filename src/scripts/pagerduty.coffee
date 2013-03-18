@@ -153,9 +153,49 @@ updateIncident = (msg, id, status) ->
       else
         msg.send "There was an error handling your request to set #{id} to #{status}"
 
+formatIncident = (incident, detail) ->
+  output = ""
+
+  tsd = incident.trigger_summary_data
+
+  if tsd? && tsd.description?
+    if detail
+      output = tsd.description
+    else
+      used_lines = []
+      lines = tsd.description.split("\n")
+      for line in lines
+        if line.match(/Host:/) || line.match(/Metric:/)
+          used_lines.push(line)
+      output = used_lines.join(" ")
+  else
+    if tsd.subject?
+      output = tsd.subject
+    else
+      incident.incident_key
+
+  return output
+
+processIncident = (robot, incident, detail) ->
+  strings = ["PagerDuty Alert: #{formatIncident(incident, detail)} - Incident ID: #{incident.id}"]
+  if incident.assigned_to_user?
+    strings.push(" Assigned To: #{incident.assigned_to_user.name}")
+  robot.send(incident_room, strings)
+
+describeIncident = (robot, id) ->
+  robot 
+    .http("https://#{subdomain}.pagerduty.com/api/v1/incidents/#{id}")
+    .headers
+      "Content-type": "application/json"
+      "Authorization": "Token token=" + token
+    .get() (err, res, body) ->
+      incident = JSON.parse(body)
+      processIncident(robot, incident, true)
+
 checkIncidents = (robot) ->
   today = new Date()
   tomorrow = new Date(today.getTime() + 86400000)
+
   robot 
     .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
     .query
@@ -171,10 +211,7 @@ checkIncidents = (robot) ->
       for incident in result.incidents
         last_seen = seen_incidents[incident.incident_number]
         if !last_seen? || processing_time - incident_timeout > last_seen
-          strings = ["PagerDuty Alert: #{incident.trigger_summary_data.description || incident.trigger_summary_data.subject || incident.incident_key} - Incident ID: #{incident.id}"]
-          if incident.assigned_to_user?
-            strings.push(" Assigned To: #{incident.assigned_to_user.name}")
-          robot.send(incident_room, strings)
+          processIncident(robot, incident, false)
           seen_incidents[incident.incident_number] = processing_time
         # make an attempt to cleanup stuff we'll never see again
         for num, time of seen_incidents
@@ -183,6 +220,9 @@ checkIncidents = (robot) ->
 
 module.exports = (robot) ->
   setInterval(checkIncidents, incident_poll_interval, robot)
+
+  robot.respond /(?:details?|describe)\s+(.*)/i, (msg) ->
+    describeIncident(robot, msg.match[1])
 
   robot.respond /(resolve|acknowledge)d?\s+(.*)/i, (msg) ->
     action = msg.match[1]
