@@ -8,12 +8,6 @@
 # hubot acknowledge <id> - acknowledge an incident
 # hubot override <minutes> <user> - override all the schedules for x minutes to user. Default user is the one saying it, and 60 minutes.
 #
-# Additionally polls for active incidents every 30 seconds, and relays them to
-# the "incident room".
-#
-# Authored by the Hotel Tonight Team.
-# Please see LICENSE file for distribution terms.
-#
 
 fs = require('fs')
 config = JSON.parse(fs.readFileSync("pagerdutyrc"))
