@@ -14,7 +14,7 @@ It provides a few features:
 
 * Ability to retrieve oncall rotation list for the current time
 * Poll for incoming incidents and send a message to an "incident room" (e.g., the Operations or Dev Team Rooms) with details.
-* Ability to resolve and acknowledge incidents right from chat.
+* Ability to interrogate, resolve and acknowledge incidents right from chat.
 * Ability to set override windows.
 
 More features are coming. This was initially developed in house to scratch an
