@@ -134,9 +134,14 @@ setOverride = (msg, time, userid) ->
                   msg.send "Error setting override for #{schedule.name} from #{start} to #{end}"
 
 updateIncident = (msg, id, status) ->
+  if status.match(/^ack/)
+    status = "acknowledged"
+  if status.match(/^res/)
+    status = "resolved"
+
   data = { 
     "requester_id": user_map[msg.message.user.name], 
-    "incidents": [ { "id": id, "status": status + "d" } ]
+    "incidents": [ { "id": id, "status": status } ]
   }
 
   string_data = JSON.stringify(data)
@@ -150,7 +155,7 @@ updateIncident = (msg, id, status) ->
     .put(string_data) (err, res, body) ->
       result = JSON.parse(body)
       if result && result.incidents && result.incidents[0] && !result.incidents[0].error?
-        msg.send "#{id} was set to #{status}d"
+        msg.send "#{id} was set to #{status}"
       else
         msg.send "There was an error handling your request to set #{id} to #{status}"
 
@@ -225,7 +230,7 @@ module.exports = (robot) ->
   robot.respond /(?:details?|describe)\s+(.*)/i, (msg) ->
     describeIncident(robot, msg.match[1])
 
-  robot.respond /(resolve|acknowledge)d?\s+(.*)/i, (msg) ->
+  robot.respond /(res(?:olve)?|ack(?:nowledge)?)d?\s+(.*)/i, (msg) ->
     action = msg.match[1]
     incident_id = msg.match[2]
     updateIncident(msg, incident_id, action)
