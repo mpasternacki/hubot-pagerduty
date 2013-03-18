@@ -5,8 +5,8 @@
 # hubot oncall - list of people on call and the schedules they're assigned to.
 # hubot urgent <some text here> - send an urgent page for when the monitoring system fails - see README
 # hubot detail/details/describe <id> - get incident detail
-# hubot resolve <id> - resolve an incident
-# hubot acknowledge <id> - acknowledge an incident
+# hubot res/resolve/resolved <id> - resolve an incident
+# hubot ack/acknowledge/acknowledged <id> - acknowledge an incident
 # hubot override <minutes> <user> - override all the schedules for x minutes to user. Default user is the one saying it, and 60 minutes.
 #
 
