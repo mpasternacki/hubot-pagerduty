@@ -5,8 +5,8 @@
 # hubot oncall - list of people on call and the schedules they're assigned to.
 # hubot urgent <some text here> - send an urgent page for when the monitoring system fails - see README
 # hubot detail/details/describe <id> - get incident detail
-# hubot res/resolve/resolved <id> - resolve an incident
-# hubot ack/acknowledge/acknowledged <id> - acknowledge an incident
+# hubot res/resolve/resolved <ids> - resolve one or more incidents. use "all" by itself to resolve all.
+# hubot ack/acknowledge/acknowledged <id> - acknowledge one or more incidents. use "all" by itself to acknowledge all.
 # hubot override <minutes> <user> - override all the schedules for x minutes to user. Default user is the one saying it, and 60 minutes.
 #
 
@@ -133,31 +133,64 @@ setOverride = (msg, time, userid) ->
                 else
                   msg.send "Error setting override for #{schedule.name} from #{start} to #{end}"
 
-updateIncident = (msg, id, status) ->
+getAllIncidents = (msg, types, callback, addl_query, incidents) ->
+  incidents   ||= []
+  addl_query  ||= { }
+  addl_query.status = types.shift()
+  msg 
+    .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
+    .query(addl_query)
+    .headers
+      "Content-type": "application/json"
+      "Authorization": "Token token=" + token
+    .get() (err, res, body) ->
+      result = JSON.parse(body)
+      for incident in result.incidents
+        incidents.push(incident)
+      if types.length > 0
+        getAllIncidents(msg, types, callback, addl_query, incidents)
+      else
+        callback(msg, incidents)
+
+updateIncident = (msg, ids, status) ->
   if status.match(/^ack/)
     status = "acknowledged"
   if status.match(/^res/)
     status = "resolved"
 
-  data = { 
-    "requester_id": user_map[msg.message.user.name], 
-    "incidents": [ { "id": id, "status": status } ]
-  }
+  update_status = (msg, incidents) ->
+    data = { 
+      "requester_id": user_map[msg.message.user.name], 
+      "incidents": [ ]
+    }
 
-  string_data = JSON.stringify(data)
-  content_length = string_data.length
-  msg
-    .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
-    .headers
-      "Content-type": "application/json"
-      "Content-Length": content_length
-      "Authorization": "Token token=" + token
-    .put(string_data) (err, res, body) ->
-      result = JSON.parse(body)
-      if result && result.incidents && result.incidents[0] && !result.incidents[0].error?
-        msg.send "#{id} was set to #{status}"
-      else
-        msg.send "There was an error handling your request to set #{id} to #{status}"
+    for incident in incidents
+      data.incidents.push({ "id": incident.id, "status": status })
+
+    string_data = JSON.stringify(data)
+    content_length = string_data.length
+    msg 
+      .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
+      .headers
+        "Content-type": "application/json"
+        "Content-Length": content_length
+        "Authorization": "Token token=" + token
+      .put(string_data) (err, res, body) ->
+        result = JSON.parse(body)
+        for incident in result.incidents
+          if incident.error?
+            msg.send "error changing #{incident.id} to #{status}: #{incident.error.message}"
+          else
+            msg.send "#{incident.id} set to #{status}"
+
+  if ids[0] == "all"
+    if status == "resolved"
+      ids = getAllIncidents(msg, ["triggered", "acknowledged"], update_status)
+    if status == "acknowledged" 
+      ids = getAllIncidents(msg, ["triggered"], update_status)
+  else
+    update_status(msg, { "id": id } for id in ids)
+
 
 formatIncident = (incident, detail) ->
   output = ""
@@ -205,30 +238,22 @@ describeIncident = (robot, id) ->
       processIncident(robot, incident, true)
 
 checkIncidents = (robot) ->
+  run_check = (robot, incidents) ->
+    processing_time = new Date().getTime()
+    for incident in incidents
+      last_seen = seen_incidents[incident.incident_number]
+      if !last_seen? || processing_time - incident_timeout > last_seen
+        processIncident(robot, incident, false)
+        seen_incidents[incident.incident_number] = processing_time
+      # make an attempt to cleanup stuff we'll never see again
+      for num, time of seen_incidents
+        if processing_time - incident_timeout > time 
+          delete seen_incidents[num]
+
   today = new Date()
   tomorrow = new Date(today.getTime() + 86400000)
 
-  robot 
-    .http("https://#{subdomain}.pagerduty.com/api/v1/incidents")
-    .query
-      since: today
-      until: tomorrow
-      status: "triggered"
-    .headers
-      "Content-type": "application/json"
-      "Authorization": "Token token=" + token
-    .get() (err, res, body) ->
-      processing_time = new Date().getTime()
-      result = JSON.parse(body)
-      for incident in result.incidents
-        last_seen = seen_incidents[incident.incident_number]
-        if !last_seen? || processing_time - incident_timeout > last_seen
-          processIncident(robot, incident, false)
-          seen_incidents[incident.incident_number] = processing_time
-        # make an attempt to cleanup stuff we'll never see again
-        for num, time of seen_incidents
-          if processing_time - incident_timeout > time 
-            delete seen_incidents[num]
+  getAllIncidents(robot, ["triggered"], run_check, { "since": today, "until": tomorrow })
 
 module.exports = (robot) ->
   setInterval(checkIncidents, incident_poll_interval, robot)
@@ -236,10 +261,10 @@ module.exports = (robot) ->
   robot.respond /(?:details?|describe)\s+(.*)/i, (msg) ->
     describeIncident(robot, msg.match[1])
 
-  robot.respond /(res(?:olve)?|ack(?:nowledge)?)d?\s+(.*)/i, (msg) ->
+  robot.respond /(res(?:olve)?|ack(?:nowledge)?)d?\s+(.+)/i, (msg) ->
     action = msg.match[1]
-    incident_id = msg.match[2]
-    updateIncident(msg, incident_id, action)
+    incident_ids = msg.match[2].split(/\s+/)
+    updateIncident(msg, incident_ids, action)
 
   robot.respond /override\s*(\S*)\s*(\S*)/i, (msg) ->
     time = msg.match[1] || 60
@@ -281,4 +306,4 @@ module.exports = (robot) ->
         else
           msg.send "There was an error sending your page."
   robot.respond /pdcheck/i, (msg) ->
-    checkIncidents(robot)
+    checkIncidents(robot) 
