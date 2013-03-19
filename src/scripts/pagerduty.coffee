@@ -280,3 +280,5 @@ module.exports = (robot) ->
           msg.send "Your page has been sent. Please be patient as it may be a minute or two before the recipient gets alerted."
         else
           msg.send "There was an error sending your page."
+  robot.respond /pdcheck/i, (msg) ->
+    checkIncidents(robot)
