@@ -27,7 +27,7 @@ incident_poll_interval  = 30000 # once every 30 seconds
 incident_timeout        = 300000 # 5 minutes in milliseconds
 
 # XXX had to code dive for this, might be hipchat specific.
-incident_room = { "room": process.env.HUBOT_PAGERDUTY_INCIDENT_ROOM || config.incident_room }
+incident_room = process.env.HUBOT_PAGERDUTY_INCIDENT_ROOM || config.incident_room
 
 seen_incidents = { }
 
@@ -228,7 +228,9 @@ processIncident = (robot, incident, detail) ->
   strings = ["PagerDuty Alert: #{formatIncident(incident, detail)} - Incident ID: #{incident.id}"]
   if incident.assigned_to_user?
     strings.push(" Assigned To: #{incident.assigned_to_user.name}")
-  robot.send(incident_room, strings)
+  user = robot.userForId 'broadcast'
+  user.room = incident_room
+  robot.send user, strings
 
 describeIncident = (robot, id) ->
   robot 
