@@ -11,11 +11,14 @@
 #
 
 fs = require('fs')
-config = JSON.parse(fs.readFileSync("pagerdutyrc"))
+config = if fs.existsSync("pagerdutyrc")
+           JSON.parse(fs.readFileSync("pagerdutyrc"))
+         else
+           {}
 
-token     = config.token
+token     = process.env.HUBOT_PAGERDUTY_TOKEN || config.token
 schedules = config.schedules
-subdomain = config.api_subdomain
+subdomain = process.env.HUBOT_PAGERDUTY_API_SUBDOMAIN || config.api_subdomain
 user_map  = config.user_map
 
 urgent_page_service_key = config.urgent_page_service_key
@@ -24,7 +27,7 @@ incident_poll_interval  = 30000 # once every 30 seconds
 incident_timeout        = 300000 # 5 minutes in milliseconds
 
 # XXX had to code dive for this, might be hipchat specific.
-incident_room = { "reply_to": config.incident_room }
+incident_room = { "room": process.env.HUBOT_PAGERDUTY_INCIDENT_ROOM || config.incident_room }
 
 seen_incidents = { }
 
