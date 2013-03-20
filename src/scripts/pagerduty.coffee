@@ -14,7 +14,8 @@ fs = require('fs')
 config = if fs.existsSync("pagerdutyrc")
            JSON.parse(fs.readFileSync("pagerdutyrc"))
          else
-           {}
+           schedules: []
+           user_map: {}
 
 token     = process.env.HUBOT_PAGERDUTY_TOKEN || config.token
 schedules = config.schedules
