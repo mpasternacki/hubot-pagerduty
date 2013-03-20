@@ -229,7 +229,7 @@ processIncident = (robot, incident, detail) ->
   if incident.assigned_to_user?
     strings.push(" Assigned To: #{incident.assigned_to_user.name}")
   console.log "#{incident_room} -> #{strings}"
-  robot.messageRoom incident_room, strings
+  robot.messageRoom incident_room, "#{strings}"
 
 describeIncident = (robot, id) ->
   robot 
